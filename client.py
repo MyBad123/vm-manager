@@ -26,7 +26,7 @@ async def send_message():
             ram_size = input("Введите количество памяти: ")
             cpu_count = input("Введите число ядер: ")
 
-            if not ram_size.isdigit() or cpu_count.isdigit():
+            if not ram_size.isdigit() or not cpu_count.isdigit():
                 print('введите целочисленные значения для ядер или памяти')
                 continue
 
@@ -43,8 +43,8 @@ async def send_message():
                 continue
 
             data = {
-                'ram_size': ram_size,
-                'cpu_count': cpu_count,
+                'ram_size': int(ram_size),
+                'cpu_count': int(cpu_count),
                 'login': login,
                 'password': password,
                 'disks': disks

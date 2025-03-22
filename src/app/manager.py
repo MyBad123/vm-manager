@@ -22,7 +22,7 @@ class ServerManager:
 
         try:
             while True:
-                data = await reader.read(100)
+                data = await reader.read(500)
 
                 message = data.decode()
                 print(f"Received {message} from {addr}")
@@ -30,38 +30,8 @@ class ServerManager:
                 if message.startswith("EXIT"):
                     break
 
-                # block create/update VM
-                elif message.startswith('CREATE_VM'):
-                    response = await self._v_machines.create(**json.loads(message[10:]))
-
-                # block with getting list of VM
-                elif message.startswith('USED_NOW_VM'):
-                    ids = await self.get_connections()
-                    response = await self._v_machines.used_now_list(ids)
-                
-                elif message.startswith('USED_VM'):
-                    response = await self._v_machines.used_list()
-                elif message.startswith('ALL_VM'):
-                    response = await self._v_machines.list_vm()
-                
-                # block with login/logout
-                elif message.startswith('LOGIN'):
-                    response = await self._v_credentials.login(**json.loads(message[6:]))
-                    
-                    if response:
-                        response = f"Вы подключились к {response[0][0]}"
-                    else:
-                        response = f"Ошибка подключения к {response[0][0]}"
-
-                elif message.startswith('LOG_OUT'):
-                    response = "Вы отключились от сервера"
-
-                # block with list of disks
-                elif message.startswith("ALL_DISKS"):
-                    response = await self._v_disks.disk_list()
-
-                else:
-                    response = f"Hello, client at {addr}! You said: {message}"
+                # work with commands
+                response = await self.process_message(message)
 
                 # response for client
                 writer.write(response.encode())
@@ -73,6 +43,44 @@ class ServerManager:
             print(f"Closing connection with {addr}")
             writer.close()
             await writer.wait_closed()
+
+    async def process_message(self, message):
+        """work with commands"""
+
+        # block create/update VM
+        if message.startswith('CREATE_VM'):
+            response = await self._v_machines.create(**json.loads(message[10:]))
+
+        # block with getting list of VM
+        elif message.startswith('USED_NOW_VM'):
+            ids = await self.get_connections()
+            response = await self._v_machines.used_now_list(ids)
+        
+        elif message.startswith('USED_VM'):
+            response = await self._v_machines.used_list()
+        elif message.startswith('ALL_VM'):
+            response = await self._v_machines.list_vm()
+        
+        # block with login/logout
+        elif message.startswith('LOGIN'):
+            response = await self._v_credentials.login(**json.loads(message[6:]))
+            
+            if response:
+                response = f"Вы подключились к {response[0][0]}"
+            else:
+                response = f"Ошибка подключения к {response[0][0]}"
+
+        elif message.startswith('LOG_OUT'):
+            response = "Вы отключились от сервера"
+
+        # block with list of disks
+        elif message.startswith("ALL_DISKS"):
+            response = await self._v_disks.disk_list()
+
+        else:
+            response = f"Hello, client at {addr}! You said: {message}"
+
+        return response
 
     async def set_connection(self, key, vm_id):
         """set new connection of VM to struct"""

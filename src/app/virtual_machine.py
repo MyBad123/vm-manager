@@ -84,7 +84,7 @@ class VirtualMachine:
                 # create new VM
                 create_vm_query = """
                     INSERT INTO virtual_machines (ram_size, cpu_count)
-                    VALUES ($1, $2),
+                    VALUES ($1, $2)
                     RETURNING id
                 """
 
@@ -108,6 +108,8 @@ class VirtualMachine:
                 await conn.executemany(
                     create_disks_query, [[vm_obj[0]['id'], disk] for disk in kwargs['disks']]
                 )
+
+        return f"Вы удачно создали новую виртуальную машину"
 
     async def update(self, **kwargs):
         """method for update VM"""
