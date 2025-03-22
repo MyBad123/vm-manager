@@ -1,26 +1,39 @@
 import asyncio
+import json
 
-async def send_message(writer):
+
+async def send_message():
+    reader, writer = await asyncio.open_connection('127.0.0.1', 8888)
+    print("Соединение с сервером установлено")
+
     while True:
-        message = input("Введите сообщение для отправки: ")
-        writer.write(message.encode())  # Отправляем сообщение
-        await writer.drain()  # Ожидаем, что сообщение будет отправлено
+        message = input("Введите сообщение: ")
 
-async def main():
-    server_host = 'localhost'  # Адрес сервера
-    server_port = 8888         # Порт сервера
+        if message.upper() == 'LOGIN':
+            username = input("Введите имя пользователя: ")
+            password = input("Введите пароль: ")
 
-    # Устанавливаем асинхронное соединение с сервером
-    reader, writer = await asyncio.open_connection(server_host, server_port)
+            login_data = {
+                'login': username,
+                'password': password
+            }
 
-    print(f'Подключено к серверу {server_host}:{server_port}')
+            message = f"LOGIN {json.dumps(login_data)}"
 
-    # Запускаем отправку сообщений
-    await send_message(writer)
 
-    # Закрываем соединение
+        writer.write(message.encode())
+        await writer.drain()
+
+        data = await reader.read(100)
+        print(f"Ответ от сервера: {data.decode()}")
+
+        if message.lower() == 'exit':
+            break
+
+    print("Закрытие соединения с сервером")
     writer.close()
     await writer.wait_closed()
 
-# Запуск основного события
-asyncio.run(main())
+
+if __name__ == "__main__":
+    asyncio.run(send_message())

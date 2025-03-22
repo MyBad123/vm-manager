@@ -1,4 +1,4 @@
-import asyncpg
+import json
 from datetime import datetime
 
 class VirtualMachineDisk:
@@ -9,19 +9,22 @@ class VirtualMachineDisk:
         """list of disks """
         
         query = """
-        SELECT 
-            vmd.id AS disk_id,
-            vmd.disk_size,
-            vm.id AS vm_id,
-            vm.ram_size,
-            vm.cpu_count
-        FROM 
-            virtual_machines_disks vmd
-        JOIN 
-            virtual_machines vm ON vmd.vm_id = vm.id;
+            SELECT 
+                vmd.id AS disk_id,
+                vmd.vm_id,
+                vmd.disk_size,
+                vm.ram_size,
+                vm.cpu_count
+            FROM 
+                virtual_machines_disks vmd
+            INNER JOIN 
+                virtual_machines vm
+            ON 
+                vmd.vm_id = vm.id;
         """
+
         result = await self.conn.fetch(query)
-        return result
+        return json.dumps(result)
 
     # Получение дисков по параметру (например, disk_size или disk_type)
     async def get_by_parameter(self, param, value):
@@ -39,16 +42,3 @@ class VirtualMachineDisk:
         """
         result = await self.conn.fetchrow(query, vm_id, disk_size, disk_type, created_at)
         return result['id']
-
-    # Обновление диска для виртуальной машины
-    async def update(self, disk_id, disk_size=None, disk_type=None):
-        updated_at = datetime.utcnow()
-        query = """
-        UPDATE virtual_machines_disks
-        SET disk_size = COALESCE($2, disk_size), 
-            disk_type = COALESCE($3, disk_type), 
-            created_at = $4
-        WHERE id = $1
-        """
-        await self.conn.execute(query, disk_id, disk_size, disk_type, updated_at)
-        return True

@@ -1,13 +1,16 @@
 import asyncio
+import json
 
+from .credentials import Сredentials
 from .disks import VirtualMachineDisk
 from .virtual_machine import VirtualMachine
 
 
 class ServerManager:
     def __init__(self, pool):
-        self._v_machines = VirtualMachine(pool)
+        self._v_credentials = Сredentials(pool)
         self._v_disks = VirtualMachineDisk(pool)
+        self._v_machines = VirtualMachine(pool)
 
         # make block some resources
         self.lock = asyncio.Lock()
@@ -17,7 +20,7 @@ class ServerManager:
 
         # make struct for getting methods
         self.methods = {
-            'auth': 'lol',
+            'LOGIN': 'lol',
             'create_vm': 'create',
             'auth_vm': 'auth_vm',
             'used_vm': 'auth_vm',
@@ -48,6 +51,9 @@ class ServerManager:
                     response = await self._v_machines.used_list()
                 elif message.startswith('ALL_VM'):
                     response = await self._v_machines.list()
+                elif message.startswith('LOGIN'):
+                    response = await self._v_credentials.login(**json.loads(message[6:]))
+                    response = await self.
                 else:
                     response = f"Hello, client at {addr}! You said: {message}"
 
@@ -61,3 +67,15 @@ class ServerManager:
             print(f"Closing connection with {addr}")
             writer.close()
             await writer.wait_closed()
+
+    async def set_connection(self, key, vm_id):
+        """set new connection of VM to struct"""
+
+        async with self.lock:
+            self.connections.update({key: vm_id})
+
+    async def drop_connection(self, key):
+        """drop connection of VM to struct"""
+
+        async with self.lock:
+            self.connections.pop(key, None)

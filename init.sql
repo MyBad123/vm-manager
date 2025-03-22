@@ -20,8 +20,7 @@ CREATE TABLE IF NOT EXISTS virtual_machine_credentials (
     login VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     last_login TIMESTAMP DEFAULT NULL,
-    FOREIGN KEY (vm_id) REFERENCES virtual_machines(id) 
-    ON DELETE CASCADE
+    FOREIGN KEY (vm_id) REFERENCES virtual_machines(id) ON DELETE CASCADE
 );
 
 
