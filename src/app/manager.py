@@ -12,20 +12,9 @@ class ServerManager:
         self._v_disks = VirtualMachineDisk(pool)
         self._v_machines = VirtualMachine(pool)
 
-        # make block some resources
-        self.lock = asyncio.Lock()
-
-        # struct of connections
+        # struct of connections and block for async requests
         self.connections = dict()
-
-        # make struct for getting methods
-        self.methods = {
-            'create_vm': 'create',
-            'used_vm': 'auth_vm',
-            'ALL_VM': 'all_vm',
-            'USED_VM': 'auth_vm',
-            'update_vm': 'update_vm',
-        }
+        self.lock = asyncio.Lock()
 
     async def handle_client(self, reader, writer):
         addr = writer.get_extra_info('peername')
@@ -43,14 +32,17 @@ class ServerManager:
 
                 # block create/update VM
                 elif message.startswith('CREATE_VM'):
-                    response = await self._v_machines.create()
+                    response = await self._v_machines.create(**json.loads(message[10:]))
 
                 # block with getting list of VM
+                elif message.startswith('USED_NOW_VM'):
+                    ids = await self.get_connections()
+                    response = await self._v_machines.used_now_list(ids)
+                
                 elif message.startswith('USED_VM'):
                     response = await self._v_machines.used_list()
                 elif message.startswith('ALL_VM'):
-                    response = await self._v_machines.list()
-                
+                    response = await self._v_machines.list_vm()
                 
                 # block with login/logout
                 elif message.startswith('LOGIN'):
@@ -71,7 +63,7 @@ class ServerManager:
                 else:
                     response = f"Hello, client at {addr}! You said: {message}"
 
-                # Ответ клиенту
+                # response for client
                 writer.write(response.encode())
                 await writer.drain()
 
