@@ -5,7 +5,7 @@ class VirtualMachineDisk:
     def __init__(self, conn):
         self.conn = conn
 
-    async def list(self):
+    async def disk_list(self):
         """list of disks """
         
         query = """

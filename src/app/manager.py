@@ -20,14 +20,11 @@ class ServerManager:
 
         # make struct for getting methods
         self.methods = {
-            'LOGIN': 'lol',
             'create_vm': 'create',
-            'auth_vm': 'auth_vm',
             'used_vm': 'auth_vm',
             'ALL_VM': 'all_vm',
             'USED_VM': 'auth_vm',
             'update_vm': 'update_vm',
-            'ALL_DISKS': self._v_disks.list
         }
 
     async def handle_client(self, reader, writer):
@@ -44,16 +41,33 @@ class ServerManager:
                 if message.startswith("EXIT"):
                     break
 
-                # block with command for work with VM
-                elif message.startswith("ALL_DISKS"):
-                    response = await self._v_disks.list()
+                # block create/update VM
+                elif message.startswith('CREATE_VM'):
+                    response = await self._v_machines.create()
+
+                # block with getting list of VM
                 elif message.startswith('USED_VM'):
                     response = await self._v_machines.used_list()
                 elif message.startswith('ALL_VM'):
                     response = await self._v_machines.list()
+                
+                
+                # block with login/logout
                 elif message.startswith('LOGIN'):
                     response = await self._v_credentials.login(**json.loads(message[6:]))
-                    response = await self.
+                    
+                    if response:
+                        response = f"Вы подключились к {response[0][0]}"
+                    else:
+                        response = f"Ошибка подключения к {response[0][0]}"
+
+                elif message.startswith('LOG_OUT'):
+                    response = "Вы отключились от сервера"
+
+                # block with list of disks
+                elif message.startswith("ALL_DISKS"):
+                    response = await self._v_disks.disk_list()
+
                 else:
                     response = f"Hello, client at {addr}! You said: {message}"
 
@@ -79,3 +93,9 @@ class ServerManager:
 
         async with self.lock:
             self.connections.pop(key, None)
+
+    async def get_connections(self):
+        """get VM with activa connections"""
+
+        async with self.lock:
+            return [self.connections[key] for key in self.connections.keys()]

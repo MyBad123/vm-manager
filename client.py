@@ -12,10 +12,12 @@ async def send_message():
         if message.upper() == 'LOGIN':
             username = input("Введите имя пользователя: ")
             password = input("Введите пароль: ")
+            vm_id = input("Введите ID виртуальной машины: ")
 
             login_data = {
                 'login': username,
-                'password': password
+                'password': password,
+                'vm_id': vm_id
             }
 
             message = f"LOGIN {json.dumps(login_data)}"

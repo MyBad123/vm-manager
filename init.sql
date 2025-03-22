@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS virtual_machine_credentials (
     FOREIGN KEY (vm_id) REFERENCES virtual_machines(id) ON DELETE CASCADE
 );
 
-
--- index for searching of VM by ID
-CREATE INDEX IF NOT EXISTS idx_vm_id ON virtual_machines_disks (vm_id);
+-- create indexes
+CREATE INDEX IF NOT EXISTS idx_virtual_machines_id ON virtual_machines(id);
+CREATE INDEX IF NOT EXISTS idx_virtual_machine_credentials_vm_id ON virtual_machine_credentials(vm_id);
+CREATE INDEX IF NOT EXISTS idx_virtual_machine_credentials_last_login ON virtual_machine_credentials(last_login);
+CREATE INDEX IF NOT EXISTS idx_virtual_machines_disks_vm_id ON virtual_machines_disks(vm_id);
