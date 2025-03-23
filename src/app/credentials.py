@@ -1,5 +1,4 @@
-import json
-from datetime import datetime
+from .utils import Hash
 
 
 class СredentialsSQL:
@@ -43,6 +42,12 @@ class Сredentials(СredentialsSQL):
     """work with response"""
 
     async def login(self, **kwargs):
+        """get VM by login/password and ID"""
+        
+        # make hash of password
+        if kwargs.get('password'):
+            kwargs['password'] = Hash.hash_password_with_key(kwargs['password'])
+        
         authenticated_data = await super()._login(**kwargs)
         if authenticated_data:
             return authenticated_data[0]

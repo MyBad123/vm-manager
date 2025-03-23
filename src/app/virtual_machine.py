@@ -1,5 +1,7 @@
 import json
 
+from .utils import Hash
+
 
 class VirtualMachineSQL:
     """get data from db"""
@@ -230,6 +232,10 @@ class VirtualMachine(VirtualMachineSQL):
     
     async def create(self, **kwargs):
         """method for create VM"""
+
+        # work with password
+        if kwargs.get('password'):
+            kwargs['password'] = Hash.hash_password_with_key(kwargs['password'])
         
         await super()._create(**kwargs)
         return "Вы успешно создали виртуальную машину"
@@ -240,6 +246,10 @@ class VirtualMachine(VirtualMachineSQL):
         # control id
         if not kwargs.get('id'):
             return "Ошибка обновления виртуальной машины: нет ID для обновления"
+        
+        # work with password
+        if kwargs.get('password'):
+            kwargs['password'] = Hash.hash_password_with_key(kwargs['password'])
 
         try:
             await super()._update(**kwargs)

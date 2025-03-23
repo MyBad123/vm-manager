@@ -7,12 +7,9 @@ class AppConfig(BaseSettings):
     db_password: str = Field(..., validation_alias="DB_PASSWORD")
     db_name: str = Field(..., validation_alias="DB_NAME")
     db_host: str = Field("127.0.0.1", validation_alias="DB_HOST")
-    db_port: int = Field(5433, validation_alias="DB_PORT")
+    db_port: int = Field(5432, validation_alias="DB_PORT")
     db_min_size: int = Field(5, validation_alias="DB_MIN_SIZE")
     db_max_size: int = Field(10, validation_alias="DB_MAX_SIZE")
-    
-    class Config:
-        env_prefix = 'DB_'
 
     def to_create_pool_dict(self) -> dict:
         return {

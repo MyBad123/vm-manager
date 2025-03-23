@@ -3,12 +3,22 @@ import json
 
 
 async def send_message():
+    print("CREATE_VM - созвать виртуальную машину")
+    print("UPDATE_VM - обновить виртуальную машину")
+    print("USED_NOW_VM - используемые виртуальные машины в текущий момент времени")
+    print("USED_VM - используемые виртуальные машины когда-либо")
+    print("ALL_VM - все виртуальные машины")
+    print("LOGIN - подключиться к виртуальной машине")
+    print("LOG_OUT - отключиться от виртуальной машины")
+    print("ALL_DISKS - просмотр всех жестких дисков\n\n")
+
     reader, writer = await asyncio.open_connection('127.0.0.1', 8010)
     print("Соединение с сервером установлено")
 
     while True:
         is_response = False
-        message = input("Введите сообщение: ")
+        is_response_disk = False
+        message = input("\n\nВведите сообщение: ")
 
         if message.upper() == 'LOGIN':
             login = input("Введите имя пользователя: ")
@@ -103,6 +113,9 @@ async def send_message():
         elif message.upper() in ('USED_NOW_VM', 'USED_VM', 'ALL_VM'):
             is_response = True
 
+        elif message.upper() in ('ALL_DISKS', ):
+            is_response_disk = True
+
         # send data
         length = len(message.encode())
         writer.write(length.to_bytes(4, byteorder='big'))
@@ -124,6 +137,16 @@ async def send_message():
                 print(f"  Количество процессоров: {vm['cpu_count']}")
                 print(f"  Размеры дисков: {', '.join(map(str, vm['disk_sizes']))}\n")
 
+            continue
+
+        if is_response_disk:
+            for disk in json.loads(data.decode()):
+                print(f"\nDisk ID: {disk['disk_id']}\n"
+                      f"VM ID: {disk['vm_id']}\n"
+                      f"Disk Size: {disk['disk_size']} GB\n"
+                      f"RAM Size: {disk['ram_size']} GB\n"
+                      f"CPU Count: {disk['cpu_count']}")
+                
             continue
 
         print(f"Ответ от сервера: {data.decode()}")

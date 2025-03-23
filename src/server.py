@@ -2,22 +2,11 @@ import asyncio
 import asyncpg
 
 from app.manager import ServerManager
-
-
-async def create_pool():
-    return await asyncpg.create_pool(
-        user='user',
-        password='password',
-        database='vm_db',
-        host='db',
-        port=5432,
-        min_size=5,
-        max_size=10
-    )
+from config import app_config
 
 
 async def main():
-    pool = await create_pool()
+    pool = await asyncpg.create_pool(**app_config.to_create_pool_dict())
     protocol = ServerManager(pool)
 
     server = await asyncio.start_server(
