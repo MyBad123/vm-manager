@@ -115,7 +115,7 @@ class VirtualMachineSQL:
                 vm.ram_size,
                 vm.cpu_count,
                 ARRAY(
-                    SELECT ROW(vmd.id, vmd.disk_size)
+                    SELECT vmd.id
                     FROM virtual_machines_disks vmd
                     WHERE vmd.vm_id = vm.id
                     ORDER BY vmd.created_at
@@ -138,7 +138,7 @@ class VirtualMachineSQL:
                     raise ValueError('Такого объекта нет в базе')
 
                 # update virtual_machines obj
-                if kwargs['ram_size'] or kwargs['cpu_count']:
+                if kwargs.get('ram_size') or kwargs.get('cpu_count'):
                     ram_size = kwargs.get('ram_size', vm_obj[1])
                     cpu_count = kwargs.get('cpu_count', vm_obj[2])
 
@@ -151,7 +151,7 @@ class VirtualMachineSQL:
                     await conn.execute(query, ram_size, cpu_count, kwargs['id'])
                     
                 # update credentials
-                if kwargs['login'] or kwargs['password']:
+                if kwargs.get('login') or kwargs.get('password'):
                     login = kwargs.get('login', vm_obj[4])
                     password = kwargs.get('password', vm_obj[5])
 
@@ -166,9 +166,27 @@ class VirtualMachineSQL:
                 # update disk size
                 create_struct = list()
 
-                if kwargs['disks']:
-                    for key, _ in enumerate(vm_obj[3]):
-                        pass
+                for key, disk in enumerate(kwargs.get('disks', [])):
+                    if key >= len(vm_obj[3]):
+                        create_struct.append([vm_obj[0], disk])
+                        continue
+
+                    query = """
+                        UPDATE virtual_machines_disks
+                        SET disk_size = $1
+                        WHERE id = $2;
+                    """
+
+                    await conn.execute(query, disk, vm_obj[3][key])
+
+                if create_struct:
+                    create_disks_query = """
+                        INSERT INTO virtual_machines_disks (vm_id, disk_size)
+                        VALUES ($1, $2)
+                    """
+
+                    await conn.executemany(create_disks_query, create_struct)
+                    
 
 
 class VirtualMachine(VirtualMachineSQL):
@@ -218,6 +236,10 @@ class VirtualMachine(VirtualMachineSQL):
     
     async def update(self, **kwargs):
         """method for update VM"""
+
+        # control id
+        if not kwargs.get('id'):
+            return "Ошибка обновления виртуальной машины: нет ID для обновления"
 
         try:
             await super()._update(**kwargs)
