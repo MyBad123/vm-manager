@@ -17,7 +17,7 @@ async def send_message():
             data = {
                 'login': login,
                 'password': password,
-                'vm_id': vm_id
+                'vm_id': int(vm_id)
             }
 
             message = f"LOGIN {json.dumps(data)}"
@@ -99,6 +99,7 @@ async def send_message():
 
             message = f"UPDATE_VM {json.dumps(data)}"
 
+        writer.write('1234'.encode())
         writer.write(message.encode())
         await writer.drain()
 

@@ -27,9 +27,9 @@ class VirtualMachineSQL:
             query += filters
         
         # If ids_list is provided, filter by those IDs
-        if ids_list:
+        if ids_list is not None:
             placeholders = ', '.join(['$' + str(i + 1) for i in range(len(ids_list))])
-            query += f" WHERE vm.id IN ({placeholders})"
+            query += f" AND vm.id IN ({placeholders})"
         
         query += """
             GROUP BY 
@@ -191,6 +191,9 @@ class VirtualMachine(VirtualMachineSQL):
 
     async def used_now_list(self, **kwargs):
         """Fetch and format the list of currently used VMs"""
+
+        if not kwargs.get('ids_list'):
+            return json.dumps([])
         
         rows = await super()._used_now_list(**kwargs)
         return json.dumps(VirtualMachine.struct_row(rows))

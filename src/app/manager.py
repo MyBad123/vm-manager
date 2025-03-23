@@ -22,7 +22,7 @@ class ServerManager:
 
         try:
             while True:
-                data = await reader.read(500)
+                data = await reader.read(1000)
                 if not data:
                     print(f"Connection with {addr} lost.")
                     break
@@ -73,11 +73,13 @@ class ServerManager:
             response = await self._v_credentials.login(**json.loads(message[6:]))
             
             if response:
+                await self.set_connection(addr, response)
                 response = f"Вы подключились к виртуальной машине"
             else:
                 response = f"Ошибка подключения к виртуальной машине"
 
         elif message.startswith('LOG_OUT'):
+            await self.drop_connection(addr)
             response = "Вы отключились от сервера"
 
         # block with list of disks
