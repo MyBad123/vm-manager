@@ -96,7 +96,7 @@ class VirtualMachineSQL:
                 """
 
                 await conn.execute(create_credentials_query, vm_obj[0]['id'], 
-                                 kwargs['login'], kwargs['password'])
+                                   kwargs['login'], kwargs['password'])
                 
                 # create list of disks for VM
                 create_disks_query = """

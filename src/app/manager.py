@@ -1,14 +1,14 @@
 import asyncio
 import json
 
-from .credentials import Сredentials
+from .credentials import Credentials
 from .disks import VirtualMachineDisk
 from .virtual_machine import VirtualMachine
 
 
 class ServerManager:
     def __init__(self, pool):
-        self._v_credentials = Сredentials(pool)
+        self._v_credentials = Credentials(pool)
         self._v_disks = VirtualMachineDisk(pool)
         self._v_machines = VirtualMachine(pool)
 
@@ -63,7 +63,7 @@ class ServerManager:
         if message.startswith('CREATE_VM'):
             response = await self._v_machines.create(**json.loads(message[10:]))
 
-        if message.startswith('UPDATE_VM'):
+        elif message.startswith('UPDATE_VM'):
             response = await self._v_machines.update(**json.loads(message[10:]))
 
         # block with getting list of VM

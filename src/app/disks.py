@@ -35,4 +35,3 @@ class VirtualMachineDisk(VirtualMachineDiskSQL):
     async def disk_list(self):
         result = await super()._disk_list()
         return json.dumps([dict(record) for record in result])
-

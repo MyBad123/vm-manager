@@ -1,7 +1,7 @@
 from .utils import Hash
 
 
-class СredentialsSQL:
+class CredentialsSQL:
     """getting data from db"""
 
     def __init__(self, pool):
@@ -38,7 +38,7 @@ class СredentialsSQL:
             return db_data
         
 
-class Сredentials(СredentialsSQL):
+class Credentials(CredentialsSQL):
     """work with response"""
 
     async def login(self, **kwargs):
