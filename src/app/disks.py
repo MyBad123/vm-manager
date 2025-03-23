@@ -1,11 +1,13 @@
 import json
-from datetime import datetime
 
-class VirtualMachineDisk:
-    def __init__(self, conn):
-        self.conn = conn
 
-    async def disk_list(self):
+class VirtualMachineDiskSQL:
+    """class for getting disks from db"""
+
+    def __init__(self, pool):
+        self.pool = pool
+
+    async def _disk_list(self):
         """list of disks """
         
         query = """
@@ -23,22 +25,14 @@ class VirtualMachineDisk:
                 vmd.vm_id = vm.id;
         """
 
-        result = await self.conn.fetch(query)
-        return json.dumps(result)
+        async with self.pool.acquire() as conn:
+            return await conn.fetch(query)
 
-    # Получение дисков по параметру (например, disk_size или disk_type)
-    async def get_by_parameter(self, param, value):
-        query = f"SELECT * FROM virtual_machines_disks WHERE {param} = $1"
-        result = await self.conn.fetch(query, value)
-        return result
 
-    # Создание нового диска для виртуальной машины
-    async def create(self, vm_id, disk_size, disk_type):
-        created_at = datetime.utcnow()
-        query = """
-        INSERT INTO virtual_machines_disks (vm_id, disk_size, disk_type, created_at) 
-        VALUES ($1, $2, $3, $4) 
-        RETURNING id
-        """
-        result = await self.conn.fetchrow(query, vm_id, disk_size, disk_type, created_at)
-        return result['id']
+class VirtualMachineDisk(VirtualMachineDiskSQL):
+    """convert SQL to string for response"""
+
+    async def disk_list(self):
+        result = await super()._disk_list()
+        return json.dumps([dict(record) for record in result])
+

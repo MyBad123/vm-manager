@@ -1,14 +1,14 @@
-class VirtualMachine:
+import json
+
+
+class VirtualMachineSQL:
+    """get data from db"""
+
     def __init__(self, pool):
         self.pool = pool
     
-    async def used_now_list(self, ids_list):
-        """list of used VM on this moment"""
-
-        if not ids_list:
-            return []
-
-        placeholders = ', '.join(['$' + str(i + 1) for i in range(len(ids_list))])
+    def _fetch_vm_data(self, filters=None, ids_list=None):
+        """Generic method to fetch VM data with optional filters and ID list"""
         
         query = f"""
             SELECT 
@@ -18,64 +18,61 @@ class VirtualMachine:
                 ARRAY_AGG(vmd.disk_size) AS disk_sizes
             FROM 
                 virtual_machines vm
-            INNER JOIN 
-                virtual_machine_credentials vmc ON vm.id = vmc.vm_id
             LEFT JOIN
                 virtual_machines_disks vmd ON vm.id = vmd.vm_id
-            WHERE 
-                vm.id IN ({placeholders})
+        """
+        
+        # Adding joins if filters are provided
+        if filters:
+            query += filters
+        
+        # If ids_list is provided, filter by those IDs
+        if ids_list:
+            placeholders = ', '.join(['$' + str(i + 1) for i in range(len(ids_list))])
+            query += f" WHERE vm.id IN ({placeholders})"
+        
+        query += """
             GROUP BY 
                 vm.id;
         """
+        
+        return query
 
+    async def _used_now_list(self, ids_list):
+        """Fetch the list of currently used VMs"""
+        
+        filters = """
+            INNER JOIN virtual_machine_credentials vmc ON vm.id = vmc.vm_id
+            WHERE vmc.last_login IS NOT NULL
+        """
+        
+        query = self._fetch_vm_data(filters=filters, ids_list=ids_list)
+        
         async with self.pool.acquire() as conn:
             return await conn.fetch(query, *ids_list)
     
-    async def used_list(self):
-        """list of used VM"""
-
-        query = f"""
-            SELECT 
-                vm.id AS vm_id,
-                vm.ram_size,
-                vm.cpu_count,
-                ARRAY_AGG(vmd.disk_size) AS disk_sizes
-            FROM 
-                virtual_machines vm
-            INNER JOIN 
-                virtual_machine_credentials vmc ON vm.id = vmc.vm_id
-            LEFT JOIN
-                virtual_machines_disks vmd ON vm.id = vmd.vm_id
-            WHERE 
-                vmc.last_login IS NOT NULL
-            GROUP BY 
-                vm.id;
-        """
-
-        async with self.pool.acquire() as conn:
-            return await conn.fetch(query)
+    async def _used_list(self):
+        """Fetch the list of used VMs"""
         
-    async def list_vm(self):
-        """list of all VM"""
-
-        query = f"""
-            SELECT 
-                vm.id AS vm_id,
-                vm.ram_size,
-                vm.cpu_count,
-                ARRAY_AGG(vmd.disk_size) AS disk_sizes
-            FROM 
-                virtual_machines vm
-            LEFT JOIN
-                virtual_machines_disks vmd ON vm.id = vmd.vm_id
-            GROUP BY 
-                vm.id;
+        filters = """
+            INNER JOIN virtual_machine_credentials vmc ON vm.id = vmc.vm_id
+            WHERE vmc.last_login IS NOT NULL
         """
-
+        
+        query = self._fetch_vm_data(filters=filters)
+        
+        async with self.pool.acquire() as conn:
+            return await conn.fetch(query)
+    
+    async def _list_vm(self):
+        """Fetch the list of all VMs"""
+        
+        query = self._fetch_vm_data(filters=None)
+        
         async with self.pool.acquire() as conn:
             return await conn.fetch(query)
 
-    async def create(self, **kwargs):
+    async def _create(self, **kwargs):
         """create vm with disk and credentials"""
 
         async with self.pool.acquire() as conn:
@@ -109,9 +106,7 @@ class VirtualMachine:
                     create_disks_query, [[vm_obj[0]['id'], disk] for disk in kwargs['disks']]
                 )
 
-        return f"Вы удачно создали новую виртуальную машину"
-
-    async def update(self, **kwargs):
+    async def _update(self, **kwargs):
         """method for update VM"""
 
         query = """
@@ -138,7 +133,9 @@ class VirtualMachine:
 
         async with self.pool.acquire() as conn:
             async with conn.transaction():
-                vm_obj = await conn.fetchone(query, kwargs['id'])
+                vm_obj = await conn.fetchrow(query, kwargs['id'])
+                if not vm_obj:
+                    raise ValueError('Такого объекта нет в базе')
 
                 # update virtual_machines obj
                 if kwargs['ram_size'] or kwargs['cpu_count']:
@@ -172,6 +169,56 @@ class VirtualMachine:
                 if kwargs['disks']:
                     for key, _ in enumerate(vm_obj[3]):
                         pass
-                        
-                    
-                
+
+
+class VirtualMachine(VirtualMachineSQL):
+    """Work with data from DB and format it for response to the client"""
+
+    @staticmethod
+    def struct_row(rows):
+        """Converts the rows of VM data into a list of dictionaries"""
+        
+        result = []
+        for row in rows:
+            result.append({
+                'vm_id': row['vm_id'],
+                'ram_size': row['ram_size'],
+                'cpu_count': row['cpu_count'],
+                'disk_sizes': row['disk_sizes']
+            })
+    
+        return result
+
+    async def used_now_list(self, **kwargs):
+        """Fetch and format the list of currently used VMs"""
+        
+        rows = await super()._used_now_list(**kwargs)
+        return json.dumps(VirtualMachine.struct_row(rows))
+    
+    async def used_list(self):
+        """Fetch and format the list of used VMs"""
+        
+        rows = await super()._used_list()
+        return json.dumps(VirtualMachine.struct_row(rows))
+    
+    async def list_vm(self):
+        """Fetch and format the list of all VMs"""
+        
+        rows = await super()._list_vm()
+        return json.dumps(VirtualMachine.struct_row(rows))
+    
+    async def create(self, **kwargs):
+        """method for create VM"""
+        
+        await super()._create(**kwargs)
+        return "Вы успешно создали виртуальную машину"
+    
+    async def update(self, **kwargs):
+        """method for update VM"""
+
+        try:
+            await super()._update(**kwargs)
+        except ValueError as e:
+            return f"Ошибка обновления виртуальной машины: {e}"
+        
+        return "Вы успешно убновили виртуальную машину"

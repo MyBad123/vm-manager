@@ -2,11 +2,13 @@ import json
 from datetime import datetime
 
 
-class Сredentials:
+class СredentialsSQL:
+    """getting data from db"""
+
     def __init__(self, pool):
         self.pool = pool
 
-    async def login(self, **kwargs):
+    async def _login(self, **kwargs):
         """auth by login and password"""
 
         query = f"""
@@ -22,4 +24,16 @@ class Сredentials:
         """
 
         async with self.pool.acquire() as conn:
-            return await conn.fetch(query, kwargs['login'], kwargs['password'], kwargs['vm_id'])
+            return await conn.fetchrow(query, kwargs['login'], kwargs['password'], kwargs['vm_id'])
+        
+
+class Сredentials(СredentialsSQL):
+    """work with response"""
+
+    async def login(self, **kwargs)
+        is_authenticated = await super()._login(**kwargs)
+        if is_authenticated:
+            return True
+        
+        return False
+    
