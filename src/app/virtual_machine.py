@@ -187,8 +187,7 @@ class VirtualMachineSQL:
                         VALUES ($1, $2)
                     """
 
-                    await conn.executemany(create_disks_query, create_struct)
-                    
+                    await conn.executemany(create_disks_query, create_struct) 
 
 
 class VirtualMachine(VirtualMachineSQL):
