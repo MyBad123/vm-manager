@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS virtual_machines_disks (
     id SERIAL PRIMARY KEY,
     vm_id INT NOT NULL,
     disk_size INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (vm_id) REFERENCES virtual_machines(id) ON DELETE CASCADE
 );
 
