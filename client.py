@@ -99,11 +99,19 @@ async def send_message():
 
             message = f"UPDATE_VM {json.dumps(data)}"
 
-        writer.write('1234'.encode())
+        # send data
+        length = len(message.encode())
+        writer.write(length.to_bytes(4, byteorder='big'))
+        await writer.drain()
+
         writer.write(message.encode())
         await writer.drain()
 
-        data = await reader.read(1000)
+        # get data
+        size_data = await reader.read(4)
+        data_size = int.from_bytes(size_data, byteorder='big')
+
+        data = await reader.read(data_size)
         print(f"Ответ от сервера: {data.decode()}")
 
         if message.lower() == 'exit':

@@ -22,7 +22,11 @@ class ServerManager:
 
         try:
             while True:
-                data = await reader.read(1000)
+                size_data = await reader.read(4)
+                data_size = int.from_bytes(size_data, byteorder='big')
+
+                data = await reader.read(data_size)
+
                 if not data:
                     print(f"Connection with {addr} lost.")
                     break
@@ -36,8 +40,13 @@ class ServerManager:
                 # work with commands
                 response = await self.process_message(addr, message)
 
-                # response for client
-                writer.write(response.encode())
+                # send response with bytes
+                response = response.encode()
+
+                writer.write((len(response).to_bytes(4, byteorder='big')))
+                await writer.drain()
+
+                writer.write(response)
                 await writer.drain()
 
         except asyncio.CancelledError:
