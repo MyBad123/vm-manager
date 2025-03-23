@@ -9,8 +9,8 @@ async def create_pool():
         user='user',
         password='password',
         database='vm_db',
-        host='127.0.0.1',
-        port=5433,
+        host='db',
+        port=5432,
         min_size=5,
         max_size=10
     )
@@ -21,7 +21,7 @@ async def main():
     protocol = ServerManager(pool)
 
     server = await asyncio.start_server(
-        protocol.handle_client, '127.0.0.1', 8888
+        protocol.handle_client, '0.0.0.0', 8888
     )
 
     addr = server.sockets[0].getsockname()

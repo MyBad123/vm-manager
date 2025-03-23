@@ -3,10 +3,11 @@ import json
 
 
 async def send_message():
-    reader, writer = await asyncio.open_connection('127.0.0.1', 8888)
+    reader, writer = await asyncio.open_connection('127.0.0.1', 8010)
     print("Соединение с сервером установлено")
 
     while True:
+        is_response = False
         message = input("Введите сообщение: ")
 
         if message.upper() == 'LOGIN':
@@ -22,7 +23,7 @@ async def send_message():
 
             message = f"LOGIN {json.dumps(data)}"
 
-        if message.upper() == 'CREATE_VM':
+        elif message.upper() == 'CREATE_VM':
             ram_size = input("Введите количество памяти: ")
             cpu_count = input("Введите число ядер: ")
 
@@ -52,7 +53,7 @@ async def send_message():
 
             message = f"CREATE_VM {json.dumps(data)}"
 
-        if message.upper() == 'UPDATE_VM':
+        elif message.upper() == 'UPDATE_VM':
             data = {}
 
             id_vm = input(f"Введите id виртуальной машины: ")
@@ -99,6 +100,9 @@ async def send_message():
 
             message = f"UPDATE_VM {json.dumps(data)}"
 
+        elif message.upper() in ('USED_NOW_VM', 'USED_VM', 'ALL_VM'):
+            is_response = True
+
         # send data
         length = len(message.encode())
         writer.write(length.to_bytes(4, byteorder='big'))
@@ -112,6 +116,16 @@ async def send_message():
         data_size = int.from_bytes(size_data, byteorder='big')
 
         data = await reader.read(data_size)
+
+        if is_response:
+            for vm in json.loads(data.decode()):
+                print(f"Виртуальная машина ID: {vm['vm_id']}")
+                print(f"  Оперативная память: {vm['ram_size']} ГБ")
+                print(f"  Количество процессоров: {vm['cpu_count']}")
+                print(f"  Размеры дисков: {', '.join(map(str, vm['disk_sizes']))}\n")
+
+            continue
+
         print(f"Ответ от сервера: {data.decode()}")
 
         if message.lower() == 'exit':

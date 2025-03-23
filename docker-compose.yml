@@ -12,5 +12,16 @@ services:
       - db_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
 
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    restart: on-failure:3
+    entrypoint: ["sh", "-c", "sleep 5 && python server.py"]
+    ports:
+      - "8010:8888"
+
 volumes:
   db_data:
