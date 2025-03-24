@@ -8,11 +8,6 @@ from .virtual_machine import VirtualMachine
 
 class ServerManager:
     def __init__(self, pool):
-        self._v_credentials = Credentials(pool)
-        self._v_disks = VirtualMachineDisk(pool)
-        self._v_machines = VirtualMachine(pool)
-
-        # struct of connections and block for async requests
         self.connections = dict()
         self.lock = asyncio.Lock()
 
